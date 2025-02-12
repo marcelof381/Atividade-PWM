@@ -2,39 +2,45 @@
 #include "pico/stdlib.h"
 #include "hardware/pwm.h"
 
-#define PWM_SERVO 7  // Pino GPIO conectado ao sinal PWM do servo
+const uint SERVO = 22;            // Pino do SERVO conectado
+const uint16_t PERIOD = 20000;   // Período do PWM (valor máximo do contador)
+const float DIVIDER_PWM = 125.0; // Divisor fracional do clock para o PWM
+uint16_t pwm_level = 500;       // Nível inicial do PWM (duty cycle)
 
-// Função para configurar o PWM para o servo
-void setup_pwm(uint gpio) {
-    gpio_set_function(gpio, GPIO_FUNC_PWM); // Configura o pino como saída PWM
-    uint slice = pwm_gpio_to_slice_num(gpio); // Obtém o slice PWM correspondente
-    pwm_set_clkdiv(slice, 64.0); // Define o divisor de clock para ajustar a frequência
-    pwm_set_wrap(slice, 3906); // Define o período do PWM para 50Hz (20ms)
-    pwm_set_enabled(slice, true); // Habilita o PWM no slice correspondente
+void setup_pwm()
+{
+    uint slice;
+    gpio_set_function(SERVO, GPIO_FUNC_PWM); // Configura o pino do SERVO para função PWM
+    slice = pwm_gpio_to_slice_num(SERVO);    // Obtém o slice do PWM associado ao pino do SERVO
+    pwm_set_clkdiv(slice, DIVIDER_PWM);    // Define o divisor de clock do PWM
+    pwm_set_wrap(slice, PERIOD);           // Configura o valor máximo do contador (período do PWM)
+    pwm_set_gpio_level(SERVO, pwm_level);    // Define o nível inicial do PWM para o pino do SERVO
+    pwm_set_enabled(slice, true);          // Habilita o PWM no slice correspondente
+
+    pwm_set_gpio_level(SERVO, 2400); // Define o nível atual do PWM (duty cycle)
+    sleep_ms(5000); 
+
+    pwm_set_gpio_level(SERVO, 1470); // Define o nível atual do PWM (duty cycle)
+    sleep_ms(5000);
+
+    pwm_set_gpio_level(SERVO, 500); // Define o nível atual do PWM (duty cycle)
+    sleep_ms(5000);
 }
 
-// Função para definir o ângulo do servo (0° a 180°)
-void set_servo_angle(uint gpio, int angle) {
-    uint slice = pwm_gpio_to_slice_num(gpio);
-    uint duty = 195 + (angle * 10.8); // Mapeia 0°-180° para duty cycle entre 195-390
-    pwm_set_gpio_level(gpio, duty); // Define o nível de PWM para o ângulo desejado
-}
-
-int main() {
-    stdio_init_all();
-    setup_pwm(PWM_SERVO);
-
-    while (true) {
-        for (int angle = 0; angle <= 180; angle += 10) {
-            set_servo_angle(PWM_SERVO, angle);
-            printf("Ângulo: %d°\n", angle);
-            sleep_ms(500);
+int main()
+{
+    stdio_init_all(); // Inicializa o sistema padrão de I/O
+    setup_pwm();      // Configura o PWM
+    while (true)
+    {
+        for (int pulse = 500; pulse <= 2400; pulse += 5) {
+            pwm_set_gpio_level(SERVO, pwm_level); // Define o nível atual do PWM (duty cycle)
+            sleep_ms(10);
         }
 
-        for (int angle = 180; angle >= 0; angle -= 10) {
-            set_servo_angle(PWM_SERVO, angle);
-            printf("Ângulo: %d°\n", angle);
-            sleep_ms(500);
-        }
+        for (int pulse = 2400; pulse >= 500; pulse -= 5) {
+            pwm_set_gpio_level(SERVO, pwm_level); // Define o nível atual do PWM (duty cycle)
+            sleep_ms(10);
+        }// Atraso de 1 segundo
     }
 }
